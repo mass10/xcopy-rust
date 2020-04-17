@@ -110,8 +110,7 @@ fn find_file(source_path: &str, destination_path: &str, handler: &dyn Fn(&str, &
 }
 
 fn xcopy(source_path: &str, destination_path: &str) -> std::result::Result<(), Box<dyn std::error::Error>> {
-	find_file(source_path, destination_path, &file_handler)?;
-	return Ok(());
+	return find_file(source_path, destination_path, &file_handler);
 }
 
 /// エントリーポイントです。
