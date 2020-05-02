@@ -1,4 +1,4 @@
-use std::io::{Write};
+use std::io::Write;
 ///
 ///
 /// 日本語パス名への対応が未確認です。
@@ -55,64 +55,65 @@ fn seems_to_be_same(source_path: &std::path::Path, destination_path: &std::path:
 }
 
 /// ファイルごとに呼びだされるハンドラーです。
-fn file_handler(source_path: &str, destination_path: &str) -> std::result::Result<(), Box<dyn std::error::Error>> {
+fn file_handler(source_path: &str, destination_path: &str) -> std::result::Result<i32, Box<dyn std::error::Error>> {
 	if seems_to_be_same(std::path::Path::new(source_path), std::path::Path::new(destination_path))? {
-		return Ok(());
+		return Ok(0);
 	}
 	println!("ファイル {} を上書きしますか？", destination_path);
 	if !confirm()? {
-		return Ok(());
+		return Ok(0);
 	}
 	std::fs::copy(source_path, destination_path)?;
 	std::thread::sleep(std::time::Duration::from_millis(1));
-	return Ok(());
+	return Ok(1);
 }
 
 /// ディレクトリをコピーします。
-fn find_file(source_path: &str, destination_path: &str, handler: &dyn Fn(&str, &str) -> std::result::Result<(), Box<dyn std::error::Error>>) -> std::result::Result<(), Box<dyn std::error::Error>> {
+fn find_file(source_path: &str, destination_path: &str, handler: &dyn Fn(&str, &str) -> std::result::Result<i32, Box<dyn std::error::Error>>) -> std::result::Result<i32, Box<dyn std::error::Error>> {
 	let source_path = std::path::Path::new(source_path);
 	let destination_path = std::path::Path::new(destination_path);
 	if !source_path.exists() {
 		println!("[TRACE] invalid path {}", source_path.to_str().unwrap());
-		return Ok(());
+		return Ok(0);
 	}
 	if source_path.is_dir() {
 		let dir_name = source_path.file_name().unwrap().to_str().unwrap();
 		if dir_name == "node_modules" {
-			return Ok(());
+			return Ok(0);
 		}
 		if dir_name == ".git" {
-			return Ok(());
+			return Ok(0);
 		}
 		if dir_name == "dist" {
-			return Ok(());
+			return Ok(0);
 		}
 		if dir_name == "target" {
-			return Ok(());
+			return Ok(0);
 		}
 		if dir_name == ".svn" {
-			return Ok(());
+			return Ok(0);
 		}
 		// コピー先にディレクトリを作成します。
 		std::fs::create_dir_all(destination_path)?;
 		// ディレクトリ内エントリーを走査
 		let it = std::fs::read_dir(source_path)?;
+		let mut affected = 0;
 		for e in it {
 			let entry = e?;
 			let name = entry.file_name();
 			let path = entry.path();
-			find_file(&path.to_str().unwrap(), destination_path.join(name).as_path().to_str().unwrap(), handler)?;
+			affected = affected + find_file(&path.to_str().unwrap(), destination_path.join(name).as_path().to_str().unwrap(), handler)?;
 		}
-		return Ok(());
+		return Ok(affected);
 	}
 	if source_path.is_file() {
 		return handler(source_path.to_str().unwrap(), destination_path.to_str().unwrap());
 	}
 	println!("[WARN] 不明なファイルです。[{}]", source_path.to_str().unwrap());
-	return Ok(());
+	return Ok(0);
 }
 
-fn xcopy(source_path: &str, destination_path: &str) -> std::result::Result<(), Box<dyn std::error::Error>> {
+fn xcopy(source_path: &str, destination_path: &str) -> std::result::Result<i32, Box<dyn std::error::Error>> {
 	return find_file(source_path, destination_path, &file_handler);
 }
 
@@ -128,5 +129,8 @@ fn main() {
 	let result = xcopy(left, right);
 	if result.is_err() {
 		println!("[ERROR] <main()> {}", result.err().unwrap());
+		return;
 	}
+	let affected = result.unwrap();
+	println!("{} file(s) copied.", affected);
 }
