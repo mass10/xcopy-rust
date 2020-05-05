@@ -1,4 +1,6 @@
 use std::io::Write;
+extern crate clap;
+
 ///
 ///
 /// 日本語パス名への対応が未確認です。
@@ -55,10 +57,17 @@ fn seems_to_be_same(source_path: &std::path::Path, destination_path: &std::path:
 }
 
 /// ファイルごとに呼びだされるハンドラーです。
-fn file_handler(source_path: &str, destination_path: &str) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+fn file_handler(source_path: &str, destination_path: &str, conf: &Configuration) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+	// 差分チェック
 	if seems_to_be_same(std::path::Path::new(source_path), std::path::Path::new(destination_path))? {
 		return Ok(0);
 	}
+	// ========== DRY-RUN ==========
+	if conf.dry_run {
+		println!("{}", destination_path);
+		return Ok(1);
+	}
+	// 上書き確認
 	println!("ファイル {} を上書きしますか？", destination_path);
 	if !confirm()? {
 		return Ok(0);
@@ -69,7 +78,7 @@ fn file_handler(source_path: &str, destination_path: &str) -> std::result::Resul
 }
 
 /// ディレクトリをコピーします。
-fn find_file(source_path: &str, destination_path: &str, handler: &dyn Fn(&str, &str) -> std::result::Result<i32, Box<dyn std::error::Error>>) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+fn find_file(source_path: &str, destination_path: &str, handler: &dyn Fn(&str, &str, &Configuration) -> std::result::Result<i32, Box<dyn std::error::Error>>, conf: &Configuration) -> std::result::Result<i32, Box<dyn std::error::Error>> {
 	let source_path = std::path::Path::new(source_path);
 	let destination_path = std::path::Path::new(destination_path);
 	if !source_path.exists() {
@@ -94,7 +103,9 @@ fn find_file(source_path: &str, destination_path: &str, handler: &dyn Fn(&str, &
 			return Ok(0);
 		}
 		// コピー先にディレクトリを作成します。
-		std::fs::create_dir_all(destination_path)?;
+		if !conf.dry_run {
+			std::fs::create_dir_all(destination_path)?;
+		}
 		// ディレクトリ内エントリーを走査
 		let it = std::fs::read_dir(source_path)?;
 		let mut affected = 0;
@@ -102,35 +113,98 @@ fn find_file(source_path: &str, destination_path: &str, handler: &dyn Fn(&str, &
 			let entry = e?;
 			let name = entry.file_name();
 			let path = entry.path();
-			affected = affected + find_file(&path.to_str().unwrap(), destination_path.join(name).as_path().to_str().unwrap(), handler)?;
+			affected = affected + find_file(&path.to_str().unwrap(), destination_path.join(name).as_path().to_str().unwrap(), handler, conf)?;
 		}
 		return Ok(affected);
 	}
 	if source_path.is_file() {
-		return handler(source_path.to_str().unwrap(), destination_path.to_str().unwrap());
+		return handler(source_path.to_str().unwrap(), destination_path.to_str().unwrap(), conf);
 	}
 	println!("[WARN] 不明なファイルです。[{}]", source_path.to_str().unwrap());
 	return Ok(0);
 }
 
-fn xcopy(source_path: &str, destination_path: &str) -> std::result::Result<i32, Box<dyn std::error::Error>> {
-	return find_file(source_path, destination_path, &file_handler);
+fn xcopy(source_path: &str, destination_path: &str, conf: &Configuration) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+	return find_file(source_path, destination_path, &file_handler, conf);
+}
+
+#[derive(Debug)]
+struct Configuration {
+	dry_run: bool,
+	verbose: bool,
+}
+
+/// コンフィギュレーション
+fn commandline_arguments() -> Configuration {
+
+	// creating an application
+	let mut application = clap::App::new("xcopy").version("0.1");
+
+	// adding a option
+	{
+		let arg_dry_run = clap::Arg::with_name("dry-run option").long("dry-run").help("dry run").takes_value(false);
+		application = application.arg(arg_dry_run);
+	}
+
+	// adding a option
+	{
+		let arg_verbose = clap::Arg::with_name("verbose option").long("verbose").help("verbose").takes_value(false);
+		application = application.arg(arg_verbose);
+	}
+
+	// retrieving
+	let matches = application.get_matches();
+
+	// configuration setting
+	let conf = Configuration {
+		dry_run: matches.is_present("dry-run option"),
+		verbose: matches.is_present("verbose option"),
+	};
+
+	return conf;
 }
 
 /// エントリーポイントです。
 fn main() {
-	let args: Vec<String> = std::env::args().collect();
-	if args.len() < 3 {
-		println!("path?");
-		return;
+	// ========== CONFIGURATION ==========
+	if false {
+		let _ = commandline_arguments();
 	}
-	let left = &args[1];
-	let right = &args[2];
-	let result = xcopy(left, right);
+	let args: Vec<String> = std::env::args().skip(1).collect();
+
+	let mut conf = Configuration {
+		dry_run: false,
+		verbose: false,
+	};
+	let mut left = "".to_string();
+	let mut right = "".to_string();
+	for e in args {
+		if e == "--dry-run" {
+			conf.dry_run = true;
+			continue;
+		}
+		if e == "--verbose" {
+			conf.verbose = true;
+			continue;
+		}
+		if left == "" {
+			left = e;
+			continue;
+		}
+		if right == "" {
+			right = e;
+			continue;
+		}
+	}
+
+	// ========== XCOPY ========== 
+	let result = xcopy(left.as_str(), right.as_str(), &conf);
 	if result.is_err() {
 		println!("[ERROR] <main()> {}", result.err().unwrap());
 		return;
 	}
-	let affected = result.unwrap();
+
+	// ========== SUMMARY ==========
+	let affected = result.ok().unwrap();
 	println!("{} file(s) copied.", affected);
 }
