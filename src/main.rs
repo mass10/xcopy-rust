@@ -2,6 +2,11 @@ extern crate clap;
 
 mod application;
 mod configuration;
+mod prompt;
+
+fn usage() {
+	println!("[ERROR] invalid option.");
+}
 
 /// エントリーポイントです。
 fn main() {
@@ -23,6 +28,10 @@ fn main() {
 		if e == "--verbose" {
 			conf.verbose = true;
 			continue;
+		}
+		if e.starts_with("--") {
+			usage();
+			return;
 		}
 		if left == "" {
 			left = e;
