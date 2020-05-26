@@ -1,12 +1,21 @@
 extern crate clap;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Configuration {
 	pub dry_run: bool,
 	pub verbose: bool,
 }
 
 impl Configuration {
+	/// 唯一のインスタンスを返します。
+	pub fn get_instance() -> &'static mut super::configuration::Configuration {
+		// ※スレッドセーフでないスコープ
+		unsafe {
+			static mut INSTANCE: Configuration = Configuration { dry_run: false, verbose: false };
+			return &mut INSTANCE;
+		}
+	}
+
 	/// コンフィギュレーション
 	pub fn commandline_arguments() -> Configuration {
 		// creating an application

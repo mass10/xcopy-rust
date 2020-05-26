@@ -1,5 +1,8 @@
 /// ファイルごとに呼びだされるハンドラーです。
-fn file_handler(source_path: &str, destination_path: &str, conf: &super::configuration::Configuration) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+fn file_handler(source_path: &str, destination_path: &str) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+	// コンフィギュレーション
+	let conf = super::configuration::Configuration::get_instance();
+
 	// 差分チェック
 	if seems_to_be_same(std::path::Path::new(source_path), std::path::Path::new(destination_path))? {
 		if conf.verbose {
@@ -28,18 +31,19 @@ fn file_handler(source_path: &str, destination_path: &str, conf: &super::configu
 }
 
 /// ディレクトリを走査します。
-fn find_file(
-	source_path: &str,
-	destination_path: &str,
-	handler: &dyn Fn(&str, &str, &super::configuration::Configuration) -> std::result::Result<i32, Box<dyn std::error::Error>>,
-	conf: &super::configuration::Configuration,
-) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+fn find_file(source_path: &str, destination_path: &str, handler: &dyn Fn(&str, &str) -> std::result::Result<i32, Box<dyn std::error::Error>>) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+	// コンフィギュレーション
+	let conf = super::configuration::Configuration::get_instance();
+	// 元
 	let source_path = std::path::Path::new(source_path);
+	// 先
 	let destination_path = std::path::Path::new(destination_path);
 	if !source_path.exists() {
 		println!("[TRACE] invalid path {}", source_path.to_str().unwrap());
 		return Ok(0);
 	}
+
+	// ディレクトリ
 	if source_path.is_dir() {
 		let dir_name = source_path.file_name().unwrap().to_str().unwrap();
 		if dir_name == "node_modules" {
@@ -68,13 +72,17 @@ fn find_file(
 			let entry = e?;
 			let name = entry.file_name();
 			let path = entry.path();
-			affected = affected + find_file(&path.to_str().unwrap(), destination_path.join(name).as_path().to_str().unwrap(), handler, conf)?;
+			affected = affected + find_file(&path.to_str().unwrap(), destination_path.join(name).as_path().to_str().unwrap(), handler)?;
 		}
 		return Ok(affected);
 	}
+
+	// ファイル
 	if source_path.is_file() {
-		return handler(source_path.to_str().unwrap(), destination_path.to_str().unwrap(), conf);
+		return handler(source_path.to_str().unwrap(), destination_path.to_str().unwrap());
 	}
+
+	// 不明なファイルシステム
 	println!("[WARN] 不明なファイルです。[{}]", source_path.to_str().unwrap());
 	return Ok(0);
 }
@@ -123,7 +131,7 @@ impl Application {
 	}
 
 	/// ディレクトリ全体をコピーします。
-	pub fn xcopy(self, source_path: &str, destination_path: &str, conf: &super::configuration::Configuration) -> std::result::Result<i32, Box<dyn std::error::Error>> {
-		return find_file(source_path, destination_path, &file_handler, conf);
+	pub fn xcopy(self, source_path: &str, destination_path: &str) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+		return find_file(source_path, destination_path, &file_handler);
 	}
 }

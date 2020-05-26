@@ -17,7 +17,7 @@ fn main() {
 
 	// ========== CONFIGURATION ==========
 	let args: Vec<String> = std::env::args().skip(1).collect();
-	let mut conf = configuration::Configuration { dry_run: false, verbose: false };
+	let mut conf = configuration::Configuration::get_instance();
 	let mut left = "".to_string();
 	let mut right = "".to_string();
 	for e in args {
@@ -45,7 +45,7 @@ fn main() {
 
 	// ========== XCOPY ==========
 	let app = application::Application::new();
-	let result = app.xcopy(left.as_str(), right.as_str(), &conf);
+	let result = app.xcopy(left.as_str(), right.as_str());
 	if result.is_err() {
 		println!("[ERROR] <main()> {}", result.err().unwrap());
 		return;
