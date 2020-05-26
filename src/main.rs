@@ -44,7 +44,8 @@ fn main() {
 	}
 
 	// ========== XCOPY ==========
-	let result = application::xcopy(left.as_str(), right.as_str(), &conf);
+	let app = application::Application::new();
+	let result = app.xcopy(left.as_str(), right.as_str(), &conf);
 	if result.is_err() {
 		println!("[ERROR] <main()> {}", result.err().unwrap());
 		return;

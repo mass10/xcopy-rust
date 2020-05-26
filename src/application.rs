@@ -1,35 +1,3 @@
-extern crate clap;
-
-#[allow(unused)]
-fn get_filetime(s: &str) -> std::result::Result<String, std::io::Error> {
-	let right_attribute = std::fs::metadata(s)?;
-	let file_time = right_attribute.modified()?;
-	let timestamp = format!("{:?}", file_time);
-	return Ok(timestamp);
-}
-
-/// 二つのファイルが同一かどうかを調べます。
-fn seems_to_be_same(source_path: &std::path::Path, destination_path: &std::path::Path) -> std::result::Result<bool, Box<dyn std::error::Error>> {
-	// 元
-	let left = std::fs::metadata(source_path)?;
-	// 先
-	let right_attribute = std::fs::metadata(destination_path);
-	if right_attribute.is_err() {
-		// 先のファイルがみつからないようです。
-		return Ok(false);
-	}
-	let right = right_attribute?;
-	// サイズとタイムスタンプが同じなら同じとみなします。
-	if left.len() == right.len() {
-		if left.modified()? == right.modified()? {
-			return Ok(true);
-		}
-	}
-	// 中身を比較
-	let result = file_diff::diff(source_path.to_str().unwrap(), destination_path.to_str().unwrap());
-	return Ok(result);
-}
-
 /// ファイルごとに呼びだされるハンドラーです。
 fn file_handler(source_path: &str, destination_path: &str, conf: &super::configuration::Configuration) -> std::result::Result<i32, Box<dyn std::error::Error>> {
 	// 差分チェック
@@ -39,22 +7,27 @@ fn file_handler(source_path: &str, destination_path: &str, conf: &super::configu
 		}
 		return Ok(0);
 	}
+
 	// ========== DRY-RUN ==========
 	if conf.dry_run {
 		println!("will be updated: {}", destination_path);
 		return Ok(1);
 	}
+
 	// 上書き確認
 	println!("ファイル {} を上書きしますか？", destination_path);
 	if !super::prompt::confirm()? {
 		return Ok(0);
 	}
+
+	// コピー
 	std::fs::copy(source_path, destination_path)?;
 	std::thread::sleep(std::time::Duration::from_millis(1));
+
 	return Ok(1);
 }
 
-/// ディレクトリをコピーします。
+/// ディレクトリを走査します。
 fn find_file(
 	source_path: &str,
 	destination_path: &str,
@@ -106,7 +79,51 @@ fn find_file(
 	return Ok(0);
 }
 
-/// アプリケーションクラス
-pub fn xcopy(source_path: &str, destination_path: &str, conf: &super::configuration::Configuration) -> std::result::Result<i32, Box<dyn std::error::Error>> {
-	return find_file(source_path, destination_path, &file_handler, conf);
+/// ファイルのタイムスタンプを文字列で返します。(未使用)
+#[allow(unused)]
+fn get_filetime(s: &str) -> std::result::Result<String, std::io::Error> {
+	let right_attribute = std::fs::metadata(s)?;
+	let file_time = right_attribute.modified()?;
+	let timestamp = format!("{:?}", file_time);
+	return Ok(timestamp);
+}
+
+/// 二つのファイルが同一かどうかを調べます。
+fn seems_to_be_same(source_path: &std::path::Path, destination_path: &std::path::Path) -> std::result::Result<bool, Box<dyn std::error::Error>> {
+	// 元
+	let left = std::fs::metadata(source_path)?;
+
+	// 先
+	let right_attribute = std::fs::metadata(destination_path);
+	if right_attribute.is_err() {
+		// 先のファイルがみつからないようです。
+		return Ok(false);
+	}
+	let right = right_attribute?;
+
+	// サイズとタイムスタンプが同じなら同じとみなします。
+	if left.len() == right.len() {
+		if left.modified()? == right.modified()? {
+			return Ok(true);
+		}
+	}
+
+	// 中身を比較
+	let result = file_diff::diff(source_path.to_str().unwrap(), destination_path.to_str().unwrap());
+	return Ok(result);
+}
+
+pub struct Application;
+
+/// アプリケーション
+impl Application {
+	/// 新しいインスタンスを返します。
+	pub fn new() -> Application {
+		return Application {};
+	}
+
+	/// ディレクトリ全体をコピーします。
+	pub fn xcopy(self, source_path: &str, destination_path: &str, conf: &super::configuration::Configuration) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+		return find_file(source_path, destination_path, &file_handler, conf);
+	}
 }
