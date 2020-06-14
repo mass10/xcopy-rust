@@ -25,6 +25,18 @@ fn file_handler(source_path: &str, destination_path: &str) -> std::result::Resul
 
 	// コピー
 	std::fs::copy(source_path, destination_path)?;
+
+	{
+		// ファイルの属性
+		let left = std::fs::metadata(destination_path)?;
+		// ファイルサイズ
+		let len = left.len();
+		// ファイル更新日時
+		use super::myformatter::MyFormatter;
+		let timestamp = format!("{}", left.modified()?.to_string1());
+		println!("> {} ({}, {} bytes)", destination_path, timestamp, len);
+	}
+
 	std::thread::sleep(std::time::Duration::from_millis(1));
 
 	return Ok(1);

@@ -2,6 +2,7 @@ extern crate clap;
 
 mod application;
 mod configuration;
+mod myformatter;
 mod prompt;
 
 fn usage() {
