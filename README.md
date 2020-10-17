@@ -1,4 +1,4 @@
-![Rust](https://github.com/mass10/xcopy-rust/workflows/Rust/badge.svg)
+![xcopy-rust](https://github.com/mass10/xcopy-rust/workflows/Rust/badge.svg)
 
 # About [WIP]
 
