@@ -1,3 +1,5 @@
+![Rust](https://github.com/mass10/xcopy-rust/workflows/Rust/badge.svg)
+
 # About [WIP]
 
 Copy directory and files recursively.
