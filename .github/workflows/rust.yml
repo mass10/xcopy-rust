@@ -9,7 +9,7 @@ env:
 
 jobs:
     # ========== ジョブ ==========
-    BUILD APPLICATION:
+    build_application:
         # プラットフォーム
         runs-on: ubuntu-latest
         # このビルドジョブのステップを定義しています。
