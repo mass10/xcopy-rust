@@ -1,18 +1,15 @@
 /// ファイルごとに呼びだされるハンドラーです。
-fn file_handler(source_path: &str, destination_path: &str) -> std::result::Result<i32, Box<dyn std::error::Error>> {
-	// コンフィギュレーション
-	let conf = super::configuration::Configuration::get_instance();
-
+fn file_handler(source_path: &str, destination_path: &str, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
 	// 差分チェック
 	if seems_to_be_same(std::path::Path::new(source_path), std::path::Path::new(destination_path))? {
-		if conf.verbose {
+		if verbose {
 			println!("will be ignored: {}", destination_path);
 		}
 		return Ok(0);
 	}
 
 	// ========== DRY-RUN ==========
-	if conf.dry_run {
+	if dry_run {
 		println!("will be updated: {}", destination_path);
 		return Ok(1);
 	}
@@ -42,10 +39,10 @@ fn file_handler(source_path: &str, destination_path: &str) -> std::result::Resul
 	return Ok(1);
 }
 
+type FileHandler = dyn Fn(&str, &str, bool, bool) -> std::result::Result<i32, Box<dyn std::error::Error>>;
+
 /// ディレクトリを走査します。
-fn find_file(source_path: &str, destination_path: &str, handler: &dyn Fn(&str, &str) -> std::result::Result<i32, Box<dyn std::error::Error>>) -> std::result::Result<i32, Box<dyn std::error::Error>> {
-	// コンフィギュレーション
-	let conf = super::configuration::Configuration::get_instance();
+fn find_file(source_path: &str, destination_path: &str, handler: &FileHandler, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
 	// 元
 	let source_path = std::path::Path::new(source_path);
 	// 先
@@ -74,7 +71,7 @@ fn find_file(source_path: &str, destination_path: &str, handler: &dyn Fn(&str, &
 			return Ok(0);
 		}
 		// コピー先にディレクトリを作成します。
-		if !conf.dry_run {
+		if !dry_run {
 			std::fs::create_dir_all(destination_path)?;
 		}
 		// ディレクトリ内エントリーを走査
@@ -84,14 +81,14 @@ fn find_file(source_path: &str, destination_path: &str, handler: &dyn Fn(&str, &
 			let entry = e?;
 			let name = entry.file_name();
 			let path = entry.path();
-			affected = affected + find_file(&path.to_str().unwrap(), destination_path.join(name).as_path().to_str().unwrap(), handler)?;
+			affected = affected + find_file(&path.to_str().unwrap(), destination_path.join(name).as_path().to_str().unwrap(), handler, dry_run, verbose)?;
 		}
 		return Ok(affected);
 	}
 
 	// ファイル
 	if source_path.is_file() {
-		return handler(source_path.to_str().unwrap(), destination_path.to_str().unwrap());
+		return handler(source_path.to_str().unwrap(), destination_path.to_str().unwrap(), dry_run, verbose);
 	}
 
 	// 不明なファイルシステム
@@ -143,7 +140,7 @@ impl Application {
 	}
 
 	/// ディレクトリ全体をコピーします。
-	pub fn xcopy(self, source_path: &str, destination_path: &str) -> std::result::Result<i32, Box<dyn std::error::Error>> {
-		return find_file(source_path, destination_path, &file_handler);
+	pub fn xcopy(self, source_path: &str, destination_path: &str, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+		return find_file(source_path, destination_path, &file_handler, dry_run, verbose);
 	}
 }
