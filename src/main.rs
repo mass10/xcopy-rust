@@ -9,25 +9,30 @@ fn usage() {
 	println!("[ERROR] invalid option.");
 }
 
+fn show_summary(affected: i32, dry_run: bool) {
+	if dry_run {
+		println!("{} file(s) deffer.", affected);
+		return;
+	}
+	println!("{} file(s) copied.", affected);
+}
+
 /// エントリーポイントです。
 fn main() {
-	// ========== CONFIGURATION(BAK) ==========
-	if false {
-		let _ = configuration::Configuration::commandline_arguments();
-	}
-
 	// ========== CONFIGURATION ==========
+	let mut left = String::new();
+	let mut right = String::new();
+	let mut dry_run = false;
+	let mut verbose = false;
+
 	let args: Vec<String> = std::env::args().skip(1).collect();
-	let mut conf = configuration::Configuration::get_instance();
-	let mut left = "".to_string();
-	let mut right = "".to_string();
 	for e in args {
 		if e == "--dry-run" {
-			conf.dry_run = true;
+			dry_run = true;
 			continue;
 		}
 		if e == "--verbose" {
-			conf.verbose = true;
+			verbose = true;
 			continue;
 		}
 		if e.starts_with("--") {
@@ -46,17 +51,20 @@ fn main() {
 
 	// ========== XCOPY ==========
 	let app = application::Application::new();
-	let result = app.xcopy(left.as_str(), right.as_str());
+	let result = app.xcopy(
+		left.as_str(),  /*元のディレクトリ名*/
+		right.as_str(), /*複製先*/
+		dry_run,        /*テスト実行*/
+		verbose,        /*冗長モード*/
+	);
 	if result.is_err() {
 		println!("[ERROR] <main()> {}", result.err().unwrap());
 		return;
 	}
 
-	// ========== SUMMARY ==========
+	// 処理結果(コピーされたファイル数)
 	let affected = result.ok().unwrap();
-	if conf.dry_run {
-		println!("{} file(s) deffer.", affected);
-	} else {
-		println!("{} file(s) copied.", affected);
-	}
+
+	// ========== SUMMARY ==========
+	show_summary(affected, dry_run);
 }
