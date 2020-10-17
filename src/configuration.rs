@@ -8,7 +8,8 @@ pub struct Configuration {
 
 impl Configuration {
 	/// 唯一のインスタンスを返します。
-	pub fn get_instance() -> &'static mut super::configuration::Configuration {
+	#[allow(unused)]
+	fn get_instance() -> &'static mut super::configuration::Configuration {
 		// ※スレッドセーフでないスコープ
 		unsafe {
 			static mut INSTANCE: Configuration = Configuration { dry_run: false, verbose: false };
@@ -17,7 +18,8 @@ impl Configuration {
 	}
 
 	/// コンフィギュレーション
-	pub fn commandline_arguments() -> Configuration {
+	#[allow(unused)]
+	pub fn configure() -> Configuration {
 		// creating an application
 		let mut application = clap::App::new("xcopy").version("0.1");
 		// adding a option
