@@ -5,10 +5,12 @@ mod configuration;
 mod myformatter;
 mod prompt;
 
+/// 使用方法を表示します。
 fn usage() {
 	println!("[ERROR] invalid option.");
 }
 
+/// サマリーを表示します。
 fn show_summary(affected: i32, dry_run: bool) {
 	if dry_run {
 		println!("{} file(s) deffer.", affected);
@@ -17,45 +19,23 @@ fn show_summary(affected: i32, dry_run: bool) {
 	println!("{} file(s) copied.", affected);
 }
 
-/// エントリーポイントです。
+/// このアプリケーションのエントリーポイントです。
 fn main() {
 	// ========== CONFIGURATION ==========
-	let mut left = String::new();
-	let mut right = String::new();
-	let mut dry_run = false;
-	let mut verbose = false;
-
-	let args: Vec<String> = std::env::args().skip(1).collect();
-	for e in args {
-		if e == "--dry-run" {
-			dry_run = true;
-			continue;
-		}
-		if e == "--verbose" {
-			verbose = true;
-			continue;
-		}
-		if e.starts_with("--") {
-			usage();
-			return;
-		}
-		if left == "" {
-			left = e;
-			continue;
-		}
-		if right == "" {
-			right = e;
-			continue;
-		}
+	let result = configuration::configure();
+	if result.is_none() {
+		usage();
+		return;
 	}
+	let conf = result.unwrap();
 
 	// ========== XCOPY ==========
 	let app = application::Application::new();
 	let result = app.xcopy(
-		left.as_str(),  /*元のディレクトリ名*/
-		right.as_str(), /*複製先*/
-		dry_run,        /*テスト実行*/
-		verbose,        /*冗長モード*/
+		conf.left.as_str(),  // 元のディレクトリ名
+		conf.right.as_str(), // 複製先
+		conf.dry_run,        // テスト実行
+		conf.verbose,        // 冗長モード
 	);
 	if result.is_err() {
 		println!("[ERROR] <main()> {}", result.err().unwrap());
@@ -66,5 +46,5 @@ fn main() {
 	let affected = result.ok().unwrap();
 
 	// ========== SUMMARY ==========
-	show_summary(affected, dry_run);
+	show_summary(affected, conf.dry_run);
 }
