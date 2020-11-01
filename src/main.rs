@@ -7,7 +7,12 @@ mod prompt;
 
 /// 使用方法を表示します。
 fn usage() {
-	println!("[ERROR] invalid option.");
+	println!("USAGE:");
+	println!("    xcop-rust path/to/source path/to/destination --dry-run --verbose");
+	println!();
+	println!("    --dry-run: Test run.");
+	println!("    --verbose: Make operation verbose.");
+	println!();
 }
 
 /// サマリーを表示します。
