@@ -1,44 +1,63 @@
 extern crate clap;
 
+/// コンフィギュレーション構造体
 #[derive(Debug, Clone)]
 pub struct Configuration {
+	pub left: String,
+	pub right: String,
 	pub dry_run: bool,
 	pub verbose: bool,
 }
 
 impl Configuration {
-	/// 唯一のインスタンスを返します。
-	#[allow(unused)]
-	fn get_instance() -> &'static mut super::configuration::Configuration {
-		// ※スレッドセーフでないスコープ
-		unsafe {
-			static mut INSTANCE: Configuration = Configuration { dry_run: false, verbose: false };
-			return &mut INSTANCE;
+	/// インスタンスを初期化します。
+	pub fn new(left: String, right: String, dry_run: bool, verbose: bool) -> Configuration {
+		let instance = Configuration {
+			left: left,
+			right: right,
+			dry_run: dry_run,
+			verbose: verbose,
+		};
+		return instance;
+	}
+}
+
+/// コンフィギュレーションを行います。
+pub fn configure() -> Option<Configuration> {
+	let mut left = String::new();
+	let mut right = String::new();
+	let mut dry_run = false;
+	let mut verbose = false;
+
+	let args: Vec<String> = std::env::args().skip(1).collect();
+	for e in args {
+		if e == "--dry-run" {
+			dry_run = true;
+			continue;
+		}
+		if e == "--verbose" {
+			verbose = true;
+			continue;
+		}
+		if e.starts_with("--") {
+			return None;
+		}
+		if left == "" {
+			left = e;
+			continue;
+		}
+		if right == "" {
+			right = e;
+			continue;
 		}
 	}
 
-	/// コンフィギュレーション
-	#[allow(unused)]
-	pub fn configure() -> Configuration {
-		// creating an application
-		let mut application = clap::App::new("xcopy").version("0.1");
-		// adding a option
-		{
-			let arg_dry_run = clap::Arg::with_name("dry-run option").long("dry-run").help("dry run").takes_value(false);
-			application = application.arg(arg_dry_run);
-		}
-		// adding a option
-		{
-			let arg_verbose = clap::Arg::with_name("verbose option").long("verbose").help("verbose").takes_value(false);
-			application = application.arg(arg_verbose);
-		}
-		// retrieving
-		let matches = application.get_matches();
-		// configuration setting
-		let conf = Configuration {
-			dry_run: matches.is_present("dry-run option"),
-			verbose: matches.is_present("verbose option"),
-		};
-		return conf;
+	if left == "" {
+		return None;
 	}
+	if right == "" {
+		return None;
+	}
+
+	return Some(Configuration::new(left, right, dry_run, verbose));
 }
