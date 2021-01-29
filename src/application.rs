@@ -1,32 +1,9 @@
-/// 二つのファイルが同一かどうかを調べます。
-fn seems_to_be_same(source_path: &std::path::Path, destination_path: &std::path::Path) -> std::result::Result<bool, Box<dyn std::error::Error>> {
-	// 元
-	let source_attributes = std::fs::metadata(source_path)?;
-
-	// 先
-	let result = std::fs::metadata(destination_path);
-	if result.is_err() {
-		// 先のファイルがみつからないようです。
-		return Ok(false);
-	}
-	let destination_attributes = result?;
-
-	// サイズとタイムスタンプが同じなら同じとみなします。
-	if source_attributes.len() == destination_attributes.len() {
-		if source_attributes.modified()? == destination_attributes.modified()? {
-			return Ok(true);
-		}
-	}
-
-	// 中身を比較
-	let result = file_diff::diff(source_path.to_str().unwrap(), destination_path.to_str().unwrap());
-	return Ok(result);
-}
+use super::io;
 
 /// ファイルごとに呼びだされるハンドラーです。
 fn file_handler(source_path: &str, destination_path: &str, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
 	// 差分チェック
-	if seems_to_be_same(std::path::Path::new(source_path), std::path::Path::new(destination_path))? {
+	if io::seems_to_be_same(std::path::Path::new(source_path), std::path::Path::new(destination_path))? {
 		if verbose {
 			println!("will be ignored: {}", destination_path);
 		}
@@ -129,15 +106,6 @@ fn find_file(source: &str, destination: &str, handler: &FileHandler, dry_run: bo
 	println!("[WARN] 不明なファイルです。[{}]", source_path.to_str().unwrap());
 
 	return Ok(0);
-}
-
-/// ファイルのタイムスタンプを文字列で返します。(未使用)
-#[allow(unused)]
-fn get_filetime(s: &str) -> std::result::Result<String, std::io::Error> {
-	let right_attribute = std::fs::metadata(s)?;
-	let file_time = right_attribute.modified()?;
-	let timestamp = format!("{:?}", file_time);
-	return Ok(timestamp);
 }
 
 pub struct Application;
