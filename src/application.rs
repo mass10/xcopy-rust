@@ -1,3 +1,28 @@
+/// 二つのファイルが同一かどうかを調べます。
+fn seems_to_be_same(source_path: &std::path::Path, destination_path: &std::path::Path) -> std::result::Result<bool, Box<dyn std::error::Error>> {
+	// 元
+	let source_attributes = std::fs::metadata(source_path)?;
+
+	// 先
+	let result = std::fs::metadata(destination_path);
+	if result.is_err() {
+		// 先のファイルがみつからないようです。
+		return Ok(false);
+	}
+	let destination_attributes = result?;
+
+	// サイズとタイムスタンプが同じなら同じとみなします。
+	if source_attributes.len() == destination_attributes.len() {
+		if source_attributes.modified()? == destination_attributes.modified()? {
+			return Ok(true);
+		}
+	}
+
+	// 中身を比較
+	let result = file_diff::diff(source_path.to_str().unwrap(), destination_path.to_str().unwrap());
+	return Ok(result);
+}
+
 /// ファイルごとに呼びだされるハンドラーです。
 fn file_handler(source_path: &str, destination_path: &str, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
 	// 差分チェック
@@ -42,17 +67,26 @@ fn file_handler(source_path: &str, destination_path: &str, dry_run: bool, verbos
 type FileHandler = dyn Fn(&str, &str, bool, bool) -> std::result::Result<i32, Box<dyn std::error::Error>>;
 
 /// ディレクトリを走査します。
-fn find_file(source_path: &str, destination_path: &str, handler: &FileHandler, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+///
+/// ### Arguments
+/// * source
+/// * destination
+/// * handler
+/// * dry_run テスト実行
+/// * verbose 冗長モード
+fn find_file(source: &str, destination: &str, handler: &FileHandler, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
 	// 元
-	let source_path = std::path::Path::new(source_path);
+	let source_path = std::path::Path::new(source);
 	// 先
-	let destination_path = std::path::Path::new(destination_path);
+	let destination_path = std::path::Path::new(destination);
+
+	// 元の存在確認
 	if !source_path.exists() {
 		println!("[TRACE] invalid path {}", source_path.to_str().unwrap());
 		return Ok(0);
 	}
 
-	// ディレクトリ
+	// ディレクトリのコピー
 	if source_path.is_dir() {
 		let dir_name = source_path.file_name().unwrap().to_str().unwrap();
 		if dir_name == "node_modules" {
@@ -86,13 +120,14 @@ fn find_file(source_path: &str, destination_path: &str, handler: &FileHandler, d
 		return Ok(affected);
 	}
 
-	// ファイル
+	// ファイルのコピー
 	if source_path.is_file() {
 		return handler(source_path.to_str().unwrap(), destination_path.to_str().unwrap(), dry_run, verbose);
 	}
 
 	// 不明なファイルシステム
 	println!("[WARN] 不明なファイルです。[{}]", source_path.to_str().unwrap());
+
 	return Ok(0);
 }
 
@@ -105,36 +140,16 @@ fn get_filetime(s: &str) -> std::result::Result<String, std::io::Error> {
 	return Ok(timestamp);
 }
 
-/// 二つのファイルが同一かどうかを調べます。
-fn seems_to_be_same(source_path: &std::path::Path, destination_path: &std::path::Path) -> std::result::Result<bool, Box<dyn std::error::Error>> {
-	// 元
-	let left = std::fs::metadata(source_path)?;
-
-	// 先
-	let right_attribute = std::fs::metadata(destination_path);
-	if right_attribute.is_err() {
-		// 先のファイルがみつからないようです。
-		return Ok(false);
-	}
-	let right = right_attribute?;
-
-	// サイズとタイムスタンプが同じなら同じとみなします。
-	if left.len() == right.len() {
-		if left.modified()? == right.modified()? {
-			return Ok(true);
-		}
-	}
-
-	// 中身を比較
-	let result = file_diff::diff(source_path.to_str().unwrap(), destination_path.to_str().unwrap());
-	return Ok(result);
-}
-
 pub struct Application;
 
+///
 /// アプリケーション
+///
 impl Application {
 	/// 新しいインスタンスを返します。
+	///
+	/// ### Returns
+	/// `Application` の新しいインスタンス
 	pub fn new() -> Application {
 		return Application {};
 	}
