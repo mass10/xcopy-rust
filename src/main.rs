@@ -10,6 +10,7 @@ fn usage() {
 	println!("USAGE:");
 	println!("    xcop-rust path/to/source path/to/destination --dry-run --verbose");
 	println!();
+	println!("    --help: Show usage.");
 	println!("    --dry-run: Test run.");
 	println!("    --verbose: Make operation verbose.");
 	println!();
@@ -24,7 +25,7 @@ fn show_summary(affected: i32, dry_run: bool) {
 	println!("{} file(s) copied.", affected);
 }
 
-/// このアプリケーションのエントリーポイントです。
+/// アプリケーションのエントリーポイントです。
 fn main() {
 	// ========== CONFIGURATION ==========
 	let result = configuration::configure();
@@ -37,8 +38,8 @@ fn main() {
 	// ========== XCOPY ==========
 	let app = application::Application::new();
 	let result = app.xcopy(
-		conf.left.as_str(),  // 元のディレクトリ名
-		conf.right.as_str(), // 複製先
+		conf.source.as_str(),  // 元のディレクトリ名
+		conf.destination.as_str(), // 複製先
 		conf.dry_run,        // テスト実行
 		conf.verbose,        // 冗長モード
 	);
