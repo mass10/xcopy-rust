@@ -2,6 +2,7 @@ extern crate clap;
 
 mod application;
 mod configuration;
+mod io;
 mod myformatter;
 mod prompt;
 
