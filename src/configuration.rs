@@ -1,20 +1,28 @@
 extern crate clap;
 
+///
 /// コンフィギュレーション構造体
+///
 #[derive(Debug, Clone)]
 pub struct Configuration {
-	pub left: String,
-	pub right: String,
+	pub source: String,
+	pub destination: String,
 	pub dry_run: bool,
 	pub verbose: bool,
 }
 
 impl Configuration {
 	/// インスタンスを初期化します。
-	pub fn new(left: String, right: String, dry_run: bool, verbose: bool) -> Configuration {
+	///
+	/// ### Arguments
+	/// * source
+	/// * destination
+	/// * dry_run
+	/// * verbose
+	pub fn new(source: String, destination: String, dry_run: bool, verbose: bool) -> Configuration {
 		let instance = Configuration {
-			left: left,
-			right: right,
+			source: source,
+			destination: destination,
 			dry_run: dry_run,
 			verbose: verbose,
 		};
@@ -23,14 +31,27 @@ impl Configuration {
 }
 
 /// コンフィギュレーションを行います。
+///
+/// ### Returns
+/// Configuration の新しいインスタンス
 pub fn configure() -> Option<Configuration> {
+	// コピー元
 	let mut left = String::new();
+	// コピー先
 	let mut right = String::new();
+	// テスト実行
 	let mut dry_run = false;
+	// 冗長モード
 	let mut verbose = false;
 
+	// コマンドライン引数
 	let args: Vec<String> = std::env::args().skip(1).collect();
+
 	for e in args {
+		if e == "--help" {
+			// usage
+			return None;
+		}
 		if e == "--dry-run" {
 			dry_run = true;
 			continue;
@@ -40,6 +61,15 @@ pub fn configure() -> Option<Configuration> {
 			continue;
 		}
 		if e.starts_with("--") {
+			println!("[ERROR] Unknown option flag {}.", e);
+			println!();
+			// usage
+			return None;
+		}
+		if e.starts_with("-") {
+			println!("[ERROR] Short option flags are not supported.");
+			println!();
+			// usage
 			return None;
 		}
 		if left == "" {
