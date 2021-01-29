@@ -23,3 +23,9 @@ xcopy src dest
 * タイムスタンプとサイズが一致しているファイルを上書きしません。
 * 内容が一致しているファイルを上書きしません。
 * ファイルのタイムスタンプもコピーします。
+
+# Getting started
+
+```sh
+git clone git@github.com:mass10/xcopy-rust.git
+```
