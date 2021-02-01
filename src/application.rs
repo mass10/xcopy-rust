@@ -46,16 +46,16 @@ type FileHandler = dyn Fn(&str, &str, bool, bool) -> std::result::Result<i32, Bo
 /// ディレクトリを走査します。
 ///
 /// ### Arguments
-/// * source
-/// * destination
-/// * handler
+/// * source_path
+/// * destination_path
+/// * handler エントリーを受け取るハンドラー
 /// * dry_run テスト実行
 /// * verbose 冗長モード
-fn find_file(source: &str, destination: &str, handler: &FileHandler, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+fn find_file(source_path: &str, destination_path: &str, handler: &FileHandler, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
 	// 元
-	let source_path = std::path::Path::new(source);
+	let source_path = std::path::Path::new(source_path);
 	// 先
-	let destination_path = std::path::Path::new(destination);
+	let destination_path = std::path::Path::new(destination_path);
 
 	// 元の存在確認
 	if !source_path.exists() {
@@ -123,6 +123,12 @@ impl Application {
 	}
 
 	/// ディレクトリ全体をコピーします。
+	///
+	/// ### Arguments
+	/// * source_path
+	/// * destination_path
+	/// * dry_run テスト実行
+	/// * verbose 冗長モード
 	pub fn xcopy(self, source_path: &str, destination_path: &str, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
 		return find_file(source_path, destination_path, &file_handler, dry_run, verbose);
 	}
