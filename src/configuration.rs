@@ -5,9 +5,13 @@ extern crate clap;
 ///
 #[derive(Debug, Clone)]
 pub struct Configuration {
+	/// コピー元
 	pub source: String,
+	/// コピー先
 	pub destination: String,
+	/// テスト実行
 	pub dry_run: bool,
+	/// 冗長実行
 	pub verbose: bool,
 }
 
@@ -15,10 +19,10 @@ impl Configuration {
 	/// インスタンスを初期化します。
 	///
 	/// ### Arguments
-	/// * source
-	/// * destination
-	/// * dry_run
-	/// * verbose
+	/// * source コピー元
+	/// * destination コピー先
+	/// * dry_run テスト実行
+	/// * verbose 冗長実行
 	pub fn new(source: String, destination: String, dry_run: bool, verbose: bool) -> Configuration {
 		let instance = Configuration {
 			source: source,

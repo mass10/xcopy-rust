@@ -1,5 +1,8 @@
 extern crate chrono;
 
+///
+/// アプリケーション固有のフォーマッター
+///
 pub trait MyFormatter {
 	/// std::time::SystemTime の文字列表現を返します。
 	fn to_string1(&self) -> String;
