@@ -6,9 +6,9 @@ extern crate clap;
 #[derive(Debug, Clone)]
 pub struct Configuration {
 	/// コピー元
-	pub source: String,
+	pub source_path: String,
 	/// コピー先
-	pub destination: String,
+	pub destination_path: String,
 	/// テスト実行
 	pub dry_run: bool,
 	/// 冗長実行
@@ -25,8 +25,8 @@ impl Configuration {
 	/// * verbose 冗長実行
 	pub fn new(source: String, destination: String, dry_run: bool, verbose: bool) -> Configuration {
 		let instance = Configuration {
-			source: source,
-			destination: destination,
+			source_path: source,
+			destination_path: destination,
 			dry_run: dry_run,
 			verbose: verbose,
 		};
