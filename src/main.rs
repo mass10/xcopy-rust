@@ -39,10 +39,14 @@ fn main() {
 	// ========== XCOPY ==========
 	let app = application::Application::new();
 	let result = app.xcopy(
-		conf.source.as_str(),  // 元のディレクトリ名
-		conf.destination.as_str(), // 複製先
-		conf.dry_run,        // テスト実行
-		conf.verbose,        // 冗長モード
+		// コピー元のディレクトリ名
+		conf.source_path.as_str(),
+		// コピー先
+		conf.destination_path.as_str(),
+		// テスト実行
+		conf.dry_run,
+		// 冗長モード
+		conf.verbose,
 	);
 	if result.is_err() {
 		println!("[ERROR] <main()> {}", result.err().unwrap());
