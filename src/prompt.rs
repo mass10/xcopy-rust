@@ -11,7 +11,7 @@ fn input_text() -> String {
 	if ret.unwrap() == 0 {
 		return String::new();
 	}
-	return (*line.trim()).to_string();
+	return line.trim().to_string();
 }
 
 /// プロンプトを表示し、YES/NO の応答を読み取ります。
