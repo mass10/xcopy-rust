@@ -36,6 +36,9 @@ impl Configuration {
 
 /// コンフィギュレーションを行います。
 ///
+/// ### 制限事項
+/// * ハイフンで始まるディレクトリは指定できません。
+///
 /// ### Returns
 /// Configuration の新しいインスタンス
 pub fn configure() -> Option<Configuration> {
