@@ -4,8 +4,13 @@ use super::prompt;
 
 /// ファイルごとに呼びだされるハンドラーです。
 fn file_handler(source_path: &str, destination_path: &str, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+	// 元
+	let source = std::path::Path::new(source_path);
+	// 先
+	let destination = std::path::Path::new(destination_path);
+
 	// 差分チェック
-	if io::seems_to_be_same(std::path::Path::new(source_path), std::path::Path::new(destination_path))? {
+	if io::seems_to_be_same(source, destination)? {
 		if verbose {
 			println!("will be ignored: {}", destination_path);
 		}
@@ -19,7 +24,7 @@ fn file_handler(source_path: &str, destination_path: &str, dry_run: bool, verbos
 	}
 
 	// 上書き確認
-	if std::path::Path::new(destination_path).exists() {
+	if destination.exists() {
 		println!("ファイル {} を上書きしますか？", destination_path);
 		if !prompt::confirm()? {
 			return Ok(0);
