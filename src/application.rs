@@ -35,19 +35,17 @@ fn file_handler(source: &str, destination: &str, dry_run: bool, verbose: bool) -
 	}
 
 	// ========== コピー ==========
-	if verbose {
-		println!("[TRACE] ファイルをコピー {} >> {}", source, destination);
-	}
-	std::fs::copy(source_path, destination_path)?;
-
 	{
+		std::fs::copy(source_path, destination_path)?;
+
 		// ファイルの属性
 		let left = std::fs::metadata(destination_path)?;
 		// ファイルサイズ
 		let len = left.len();
 		// ファイル更新日時
 		use myformatter::MyFormatter;
-		let timestamp = format!("{}", left.modified()?.to_string1());
+		let timestamp = left.modified()?.to_string1();
+
 		println!("> {} ({}, {} bytes)", destination, timestamp, len);
 	}
 
