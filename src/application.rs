@@ -1,4 +1,6 @@
 use super::io;
+use super::myformatter;
+use super::prompt;
 
 /// ファイルごとに呼びだされるハンドラーです。
 fn file_handler(source_path: &str, destination_path: &str, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
@@ -17,9 +19,11 @@ fn file_handler(source_path: &str, destination_path: &str, dry_run: bool, verbos
 	}
 
 	// 上書き確認
-	println!("ファイル {} を上書きしますか？", destination_path);
-	if !super::prompt::confirm()? {
-		return Ok(0);
+	if std::path::Path::new(destination_path).exists() {
+		println!("ファイル {} を上書きしますか？", destination_path);
+		if !prompt::confirm()? {
+			return Ok(0);
+		}
 	}
 
 	// コピー
@@ -31,7 +35,7 @@ fn file_handler(source_path: &str, destination_path: &str, dry_run: bool, verbos
 		// ファイルサイズ
 		let len = left.len();
 		// ファイル更新日時
-		use super::myformatter::MyFormatter;
+		use myformatter::MyFormatter;
 		let timestamp = format!("{}", left.modified()?.to_string1());
 		println!("> {} ({}, {} bytes)", destination_path, timestamp, len);
 	}
