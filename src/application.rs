@@ -3,35 +3,41 @@ use super::myformatter;
 use super::prompt;
 
 /// ファイルごとに呼びだされるハンドラーです。
-fn file_handler(source_path: &str, destination_path: &str, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+///
+/// ### Arguments
+///
+fn file_handler(source: &str, destination: &str, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
 	// 元
-	let source = std::path::Path::new(source_path);
+	let source_path = std::path::Path::new(source);
 	// 先
-	let destination = std::path::Path::new(destination_path);
+	let destination_path = std::path::Path::new(destination);
 
 	// 差分チェック
-	if io::seems_to_be_same(source, destination)? {
+	if io::seems_to_be_same(source_path, destination_path)? {
 		if verbose {
-			println!("will be ignored: {}", destination_path);
+			println!("will be ignored: {}", destination);
 		}
 		return Ok(0);
 	}
 
 	// ========== DRY-RUN ==========
 	if dry_run {
-		println!("will be updated: {}", destination_path);
+		println!("will be updated: {}", destination);
 		return Ok(1);
 	}
 
 	// 上書き確認
-	if destination.exists() {
-		println!("ファイル {} を上書きしますか？", destination_path);
+	if destination_path.exists() {
+		println!("ファイル {} を上書きしますか？", destination);
 		if !prompt::confirm()? {
 			return Ok(0);
 		}
 	}
 
-	// コピー
+	// ========== コピー ==========
+	if verbose {
+		println!("[TRACE] ファイルをコピー {} >> {}", source, destination);
+	}
 	std::fs::copy(source_path, destination_path)?;
 
 	{
@@ -42,7 +48,7 @@ fn file_handler(source_path: &str, destination_path: &str, dry_run: bool, verbos
 		// ファイル更新日時
 		use myformatter::MyFormatter;
 		let timestamp = format!("{}", left.modified()?.to_string1());
-		println!("> {} ({}, {} bytes)", destination_path, timestamp, len);
+		println!("> {} ({}, {} bytes)", destination, timestamp, len);
 	}
 
 	std::thread::sleep(std::time::Duration::from_millis(1));
@@ -55,16 +61,16 @@ type FileHandler = dyn Fn(&str, &str, bool, bool) -> std::result::Result<i32, Bo
 /// ディレクトリを走査します。
 ///
 /// ### Arguments
-/// * source_path
-/// * destination_path
+/// * source コピー元
+/// * destination コピー先
 /// * handler エントリーを受け取るハンドラー
 /// * dry_run テスト実行
 /// * verbose 冗長モード
-fn find_file(source_path: &str, destination_path: &str, handler: &FileHandler, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+fn find_file(source: &str, destination: &str, handler: &FileHandler, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
 	// 元
-	let source_path = std::path::Path::new(source_path);
+	let source_path = std::path::Path::new(source);
 	// 先
-	let destination_path = std::path::Path::new(destination_path);
+	let destination_path = std::path::Path::new(destination);
 
 	// 元の存在確認
 	if !source_path.exists() {
@@ -90,19 +96,39 @@ fn find_file(source_path: &str, destination_path: &str, handler: &FileHandler, d
 		if dir_name == ".svn" {
 			return Ok(0);
 		}
+
 		// コピー先にディレクトリを作成します。
-		if !dry_run {
+		if dry_run {
+			if verbose {
+				if !destination_path.exists() {
+					println!("[TRACE] ディレクトリを作成します... [{}]", destination);
+				}
+			}
+		} else {
+			if verbose {
+				println!("[TRACE] ディレクトリを作成します... [{}]", destination);
+			}
 			std::fs::create_dir_all(destination_path)?;
 		}
-		// ディレクトリ内エントリーを走査
-		let it = std::fs::read_dir(source_path)?;
+
+		// コピーされたファイルの数
 		let mut affected = 0;
+
+		// ディレクトリ内のエントリーを走査します。
+		let it = std::fs::read_dir(source_path)?;
 		for e in it {
 			let entry = e?;
 			let name = entry.file_name();
 			let path = entry.path();
-			affected = affected + find_file(&path.to_str().unwrap(), destination_path.join(name).as_path().to_str().unwrap(), handler, dry_run, verbose)?;
+			affected += find_file(
+				&path.to_str().unwrap(),
+				destination_path.join(name).as_path().to_str().unwrap(),
+				handler,
+				dry_run,
+				verbose,
+			)?;
 		}
+
 		return Ok(affected);
 	}
 
@@ -134,11 +160,11 @@ impl Application {
 	/// ディレクトリ全体をコピーします。
 	///
 	/// ### Arguments
-	/// * source_path
-	/// * destination_path
+	/// * source コピー元
+	/// * destination コピー先
 	/// * dry_run テスト実行
 	/// * verbose 冗長モード
-	pub fn xcopy(self, source_path: &str, destination_path: &str, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
-		return find_file(source_path, destination_path, &file_handler, dry_run, verbose);
+	pub fn xcopy(self, source: &str, destination: &str, dry_run: bool, verbose: bool) -> std::result::Result<i32, Box<dyn std::error::Error>> {
+		return find_file(source, destination, &file_handler, dry_run, verbose);
 	}
 }
